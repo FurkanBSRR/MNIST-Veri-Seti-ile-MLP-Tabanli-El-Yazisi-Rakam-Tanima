@@ -3,16 +3,18 @@ import torch.nn as nn
 
 
 class MLP(nn.Module):
-    def __init__(self, hidden_sizes=(256, 128), input_size=784, num_classes=10):
+    def __init__(self, hidden_sizes=(256, 128), input_size=784, num_classes=10, dropout=0.0):
         super().__init__()
 
         layers = [nn.Flatten()]          # [batch, 1, 28, 28] -> [batch, 784]
         prev_size = input_size
 
-        # Her gizli katman için: Linear + ReLU
+        # Her gizli katman için: Linear + ReLU (+ isteğe bağlı Dropout)
         for size in hidden_sizes:
             layers.append(nn.Linear(prev_size, size))
             layers.append(nn.ReLU())
+            if dropout > 0:
+                layers.append(nn.Dropout(dropout))
             prev_size = size
 
         # Çıkış katmanı: 10 sınıf, sonrasında ReLU yok
@@ -29,22 +31,9 @@ def count_parameters(model):
 
 
 if __name__ == "__main__":
-    from data import get_loaders
-
     model = MLP()
     print(model)
     print("Toplam parametre sayısı:", count_parameters(model))
 
-    # Henüz eğitilmemiş modele bir batch verelim
-    train_loader, _, _ = get_loaders()
-    images, labels = next(iter(train_loader))
-
-    outputs = model(images)
-    print("Çıkışın şekli:", outputs.shape)
-    print("İlk görüntü için 10 çıkış puanı:", outputs[0].tolist())
-
-    predictions = outputs.argmax(dim=1)
-    print("Tahminler :", predictions[:10].tolist())
-    print("Gerçekler :", labels[:10].tolist())
-    accuracy = (predictions == labels).float().mean().item()
-    print("Eğitilmemiş modelin bu batch'teki doğruluğu:", accuracy)
+    model_with_dropout = MLP(dropout=0.2)
+    print(model_with_dropout)
